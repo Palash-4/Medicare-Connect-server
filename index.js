@@ -268,6 +268,49 @@ async function run() {
 
     //Patient Appointments
     app.get(
+      "/api/dashboard/patient",
+      async (req, res) => {
+        try {
+          const appointments =
+            await appointmentCollection.countDocuments();
+
+          const doctors =
+            await doctorCollection.countDocuments();
+
+          const reviews =
+            await reviewCollection.find().toArray();
+
+          const rating =
+            reviews.length > 0
+              ? (
+                reviews.reduce(
+                  (sum, item) =>
+                    sum + item.rating,
+                  0
+                ) / reviews.length
+              ).toFixed(1)
+              : 0;
+
+          // Prescription collection নাই,
+          // তাই আপাতত 0 দিচ্ছি
+          const records = 0;
+
+          res.send({
+            appointments,
+            doctors,
+            records,
+            rating,
+          });
+        } catch (error) {
+          console.log(error);
+
+          res.status(500).send({
+            message: error.message,
+          });
+        }
+      }
+    );
+    app.get(
       "/api/appointments/:email",
       async (req, res) => {
         const email =
@@ -304,6 +347,34 @@ async function run() {
             .toArray();
 
         res.send(result);
+      }
+    );
+
+    // Doctor Patients
+    app.get(
+      "/api/doctor-patients/:email",
+      async (req, res) => {
+        try {
+          const email = req.params.email;
+
+          const result =
+            await appointmentCollection
+              .find({
+                doctorEmail: email,
+              })
+              .sort({
+                createdAt: -1,
+              })
+              .toArray();
+
+          res.send(result);
+        } catch (error) {
+          console.log(error);
+
+          res.status(500).send({
+            message: error.message,
+          });
+        }
       }
     );
 
@@ -605,3 +676,4 @@ app.listen(port, () => {
     `Server Running On ${port}`
   );
 });
+
