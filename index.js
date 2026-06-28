@@ -599,10 +599,9 @@ app.get("/", (req, res) => {
   );
 });
 
-module.exports = app;
 
-// app.listen(port, () => {
-//   console.log(
-//     `Server Running On ${port}`
-//   );
-// });
+app.listen(port, () => {
+  console.log(
+    `Server Running On ${port}`
+  );
+});
