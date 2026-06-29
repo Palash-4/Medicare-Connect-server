@@ -7,6 +7,10 @@ const {
   ObjectId,
 } = require("mongodb");
 
+const stripe = require("stripe")(
+  process.env.STRIPE_SECRET_KEY
+);
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -22,6 +26,8 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
 
 
 async function run() {
@@ -328,6 +334,108 @@ async function run() {
       }
     );
 
+    app.post(
+      "/api/create-payment-intent",
+      async (req, res) => {
+        try {
+          const { amount } = req.body;
+
+          const paymentIntent =
+            await stripe.paymentIntents.create({
+              amount: Math.round(
+                amount * 100
+              ),
+              currency: "usd",
+              automatic_payment_methods:
+              {
+                enabled: true,
+              },
+            });
+
+          res.send({
+            clientSecret:
+              paymentIntent.client_secret,
+          });
+        } catch (error) {
+          res.status(500).send({
+            message: error.message,
+          });
+        }
+      }
+    );
+
+    app.post(
+      "/api/payments",
+      async (req, res) => {
+        try {
+          const payment = req.body;
+
+          const result =
+            await paymentCollection.insertOne({
+              ...payment,
+              paymentDate: new Date(),
+            });
+
+          await appointmentCollection.updateOne(
+            {
+              _id: new ObjectId(
+                payment.appointmentId
+              ),
+            },
+            {
+              $set: {
+                paymentStatus: "paid",
+              },
+            }
+          );
+
+          res.send(result);
+        } catch (error) {
+          res.status(500).send({
+            message: error.message,
+          });
+        }
+      }
+    );
+
+   app.patch(
+  "/api/payments/:id",
+  async (req, res) => {
+    try {
+      const id =
+        req.params.id;
+
+      const filter = {
+        _id: new ObjectId(
+          id
+        ),
+      };
+
+      const updateDoc = {
+        $set: {
+          paymentStatus:
+            "paid",
+        },
+      };
+
+      const result =
+        await appointmentCollection.updateOne(
+          filter,
+          updateDoc
+        );
+
+      res.send(result);
+    } catch (error) {
+      console.log(error);
+
+      res.status(500).send({
+        message:
+          "Payment update failed",
+      });
+    }
+  }
+);
+
     //Doctor Appointments
     app.get(
       "/api/doctor-appointments/:email",
@@ -350,6 +458,27 @@ async function run() {
       }
     );
 
+    app.get(
+      "/api/payments",
+      async (req, res) => {
+        try {
+          const result =
+            await paymentCollection
+              .find()
+              .sort({
+                paymentDate: -1,
+              })
+              .toArray();
+
+          res.send(result);
+        } catch (error) {
+          res.status(500).send({
+            message: error.message,
+          });
+        }
+      }
+    );
+
     // Doctor Patients
     app.get(
       "/api/doctor-patients/:email",
@@ -361,6 +490,7 @@ async function run() {
             await appointmentCollection
               .find({
                 doctorEmail: email,
+                paymentStatus: "paid",
               })
               .sort({
                 createdAt: -1,
@@ -433,13 +563,36 @@ async function run() {
         const id =
           req.params.id;
 
+        const appointment =
+          await appointmentCollection.findOne({
+            _id: new ObjectId(id),
+          });
+
+        if (!appointment) {
+          return res.status(404).send({
+            message: "Appointment not found",
+          });
+        }
+
+        if (
+          appointment.paymentStatus ===
+          "paid"
+        ) {
+          return res.status(400).send({
+            message:
+              "Paid appointment cannot be cancelled",
+          });
+        } {
+          return res.status(400).send({
+            message:
+              "Paid appointment cannot be cancelled",
+          });
+        }
+
         const result =
-          await appointmentCollection.deleteOne(
-            {
-              _id:
-                new ObjectId(id),
-            }
-          );
+          await appointmentCollection.deleteOne({
+            _id: new ObjectId(id),
+          });
 
         res.send(result);
       }
