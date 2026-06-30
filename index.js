@@ -414,43 +414,43 @@ async function run() {
       }
     );
 
-   app.patch(
-  "/api/payments/:id",
-  async (req, res) => {
-    try {
-      const id =
-        req.params.id;
+    app.patch(
+      "/api/payments/:id",
+      async (req, res) => {
+        try {
+          const id =
+            req.params.id;
 
-      const filter = {
-        _id: new ObjectId(
-          id
-        ),
-      };
+          const filter = {
+            _id: new ObjectId(
+              id
+            ),
+          };
 
-      const updateDoc = {
-        $set: {
-          paymentStatus:
-            "paid",
-        },
-      };
+          const updateDoc = {
+            $set: {
+              paymentStatus:
+                "paid",
+            },
+          };
 
-      const result =
-        await appointmentCollection.updateOne(
-          filter,
-          updateDoc
-        );
+          const result =
+            await appointmentCollection.updateOne(
+              filter,
+              updateDoc
+            );
 
-      res.send(result);
-    } catch (error) {
-      console.log(error);
+          res.send(result);
+        } catch (error) {
+          console.log(error);
 
-      res.status(500).send({
-        message:
-          "Payment update failed",
-      });
-    }
-  }
-);
+          res.status(500).send({
+            message:
+              "Payment update failed",
+          });
+        }
+      }
+    );
 
     //Doctor Appointments
     app.get(
@@ -573,44 +573,49 @@ async function run() {
     );
 
     //Delete Appointment
+    // Delete Appointment
     app.delete(
       "/api/appointments/:id",
       async (req, res) => {
-        const id =
-          req.params.id;
+        try {
+          const id = req.params.id;
 
-        const appointment =
-          await appointmentCollection.findOne({
-            _id: new ObjectId(id),
-          });
+          const appointment =
+            await appointmentCollection.findOne({
+              _id: new ObjectId(id),
+            });
 
-        if (!appointment) {
-          return res.status(404).send({
-            message: "Appointment not found",
+          if (!appointment) {
+            return res.status(404).send({
+              message: "Appointment not found",
+            });
+          }
+
+          // Paid appointment delete করা যাবে না
+          if (
+            appointment.paymentStatus === "paid"
+          ) {
+            return res.status(400).send({
+              message:
+                "Paid appointment cannot be cancelled",
+            });
+          }
+
+          // Unpaid হলে delete হবে
+          const result =
+            await appointmentCollection.deleteOne({
+              _id: new ObjectId(id),
+            });
+
+          res.send(result);
+        } catch (error) {
+          console.log(error);
+
+          res.status(500).send({
+            message:
+              "Failed to delete appointment",
           });
         }
-
-        if (
-          appointment.paymentStatus ===
-          "paid"
-        ) {
-          return res.status(400).send({
-            message:
-              "Paid appointment cannot be cancelled",
-          });
-        } {
-          return res.status(400).send({
-            message:
-              "Paid appointment cannot be cancelled",
-          });
-        }
-
-        const result =
-          await appointmentCollection.deleteOne({
-            _id: new ObjectId(id),
-          });
-
-        res.send(result);
       }
     );
 
