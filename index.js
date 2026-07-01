@@ -396,6 +396,8 @@ async function run() {
             {
               $set: {
                 paymentStatus: "paid",
+                appointmentStatus:
+                  "accepted",
               },
             }
           );
@@ -544,8 +546,8 @@ async function run() {
             },
             {
               $set: {
-                paymentStatus: "paid",
-                appointmentStatus: "accepted",
+                appointmentStatus:
+                  status,
               },
             }
           );
@@ -595,26 +597,6 @@ async function run() {
           res.status(500).send({
             message:
               "Failed to delete appointment",
-          });
-        }
-      }
-    );
-
-    app.get(
-      "/api/appointment/:id",
-      async (req, res) => {
-        try {
-          const id = req.params.id;
-
-          const result =
-            await appointmentCollection.findOne({
-              _id: new ObjectId(id),
-            });
-
-          res.send(result);
-        } catch (error) {
-          res.status(500).send({
-            message: error.message,
           });
         }
       }
