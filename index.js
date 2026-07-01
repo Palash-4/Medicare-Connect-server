@@ -409,43 +409,30 @@ async function run() {
       }
     );
 
-    app.patch(
-      "/api/payments/:id",
-      async (req, res) => {
-        try {
-          const id =
-            req.params.id;
+    app.patch("/api/payments/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
 
-          const filter = {
-            _id: new ObjectId(
-              id
-            ),
-          };
-
-          const updateDoc = {
-            $set: {
-              paymentStatus:
-                "paid",
+        const result =
+          await appointmentCollection.updateOne(
+            {
+              _id: new ObjectId(id),
             },
-          };
+            {
+              $set: {
+                paymentStatus: "paid",
+                appointmentStatus: "accepted",
+              },
+            }
+          );
 
-          const result =
-            await appointmentCollection.updateOne(
-              filter,
-              updateDoc
-            );
-
-          res.send(result);
-        } catch (error) {
-          console.log(error);
-
-          res.status(500).send({
-            message:
-              "Payment update failed",
-          });
-        }
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: "Payment update failed",
+        });
       }
-    );
+    });
 
     //Doctor Appointments
     app.get(
@@ -557,8 +544,8 @@ async function run() {
             },
             {
               $set: {
-                appointmentStatus:
-                  status,
+                paymentStatus: "paid",
+                appointmentStatus: "accepted",
               },
             }
           );
@@ -567,7 +554,6 @@ async function run() {
       }
     );
 
-    //Delete Appointment
     // Delete Appointment
     app.delete(
       "/api/appointments/:id",
@@ -609,6 +595,26 @@ async function run() {
           res.status(500).send({
             message:
               "Failed to delete appointment",
+          });
+        }
+      }
+    );
+
+    app.get(
+      "/api/appointment/:id",
+      async (req, res) => {
+        try {
+          const id = req.params.id;
+
+          const result =
+            await appointmentCollection.findOne({
+              _id: new ObjectId(id),
+            });
+
+          res.send(result);
+        } catch (error) {
+          res.status(500).send({
+            message: error.message,
           });
         }
       }
