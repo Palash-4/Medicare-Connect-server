@@ -660,73 +660,104 @@ async function run() {
     app.get(
       "/api/dashboard/patient/:email",
       async (req, res) => {
-        const email =
-          req.params.email;
+        try {
+          const email =
+            req.params.email;
 
-        const appointments =
-          await appointmentCollection.countDocuments(
-            {
-              patientEmail:
-                email,
-            }
-          );
+          const patient =
+            await usersCollection.findOne(
+              { email }
+            );
 
-        const reviews =
-          await reviewCollection.countDocuments(
-            {
-              patientEmail:
-                email,
-            }
-          );
+          if (!patient) {
+            return res.status(404).send({
+              message:
+                "Patient not found",
+            });
+          }
 
-        const payments =
-          await paymentCollection.countDocuments(
-            {
-              patientEmail:
-                email,
-            }
-          );
+          const appointments =
+            await appointmentsCollection
+              .find({
+                patientId:
+                  patient._id.toString(),
+              })
+              .toArray();
 
-        res.send({
-          appointments,
-          reviews,
-          payments,
-        });
+          const totalAppointments =
+            appointments.length;
+
+          const totalDoctors =
+            new Set(
+              appointments.map(
+                (item) =>
+                  item.doctorId
+              )
+            ).size;
+
+          const totalPayments =
+            appointments.filter(
+              (item) =>
+                item.paymentStatus ===
+                "paid"
+            ).length;
+
+          const totalReviews =
+            await reviewsCollection.countDocuments(
+              {
+                patientId:
+                  patient._id.toString(),
+              }
+            );
+
+          res.send({
+            totalAppointments,
+            totalDoctors,
+            totalPayments,
+            totalReviews,
+          });
+        } catch (error) {
+          console.log(error);
+          res.status(500).send({
+            message:
+              "Server Error",
+          });
+        }
       }
     );
 
     //Doctor Dashboard
 
 
-   app.get("/api/doctors/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
+    app.get("/api/doctors/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
 
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send({
-        message: "Invalid id",
-      });
-    }
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({
+            message: "Invalid id",
+          });
+        }
 
-    const doctor =
-      await doctorCollection.findOne({
-        _id: new ObjectId(id),
-      });
+        const doctor =
+          await doctorCollection.findOne({
+            _id: new ObjectId(id),
+          });
 
-    if (!doctor) {
-      return res.status(404).send({
-        message: "Doctor not found",
-      });
-    }
+        if (!doctor) {
+          return res.status(404).send({
+            message: "Doctor not found",
+          });
+        }
 
-    res.send(doctor);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      message: error.message,
+        res.send(doctor);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send({
+          message: error.message,
+        });
+      }
     });
-  }
-});
 
 
     app.get(
