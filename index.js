@@ -620,6 +620,35 @@ async function run() {
       }
     );
 
+    app.get(
+      "/api/appointment/:id",
+      async (req, res) => {
+        try {
+          const id = req.params.id;
+
+          const appointment =
+            await appointmentCollection.findOne({
+              _id: new ObjectId(id),
+            });
+
+          if (!appointment) {
+            return res.status(404).send({
+              message: "Appointment not found",
+            });
+          }
+
+          res.send(appointment);
+        } catch (error) {
+          console.log(error);
+
+          res.status(500).send({
+            message:
+              "Failed to fetch appointment",
+          });
+        }
+      }
+    );
+
     //Reviews
     app.post(
       "/api/reviews",
