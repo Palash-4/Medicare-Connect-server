@@ -14,25 +14,20 @@ const stripe = require("stripe")(
 const app = express();
 const port = process.env.PORT || 5000;
 
-
-const port = process.env.PORT || 5000;
-
 console.log("CLIENT_URI =", process.env.CLIENT_URI);
 console.log("MONGODB_URI =", !!process.env.MONGODB_URI);
 
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URI,
+    origin: [
+      "http://localhost:3000",
+      "https://medicare-connect-green.vercel.app",
+    ],
     credentials: true,
   })
 );
 
-app.use(
-  cors({
-    origin: process.env.CLIENT_URI,
-    credentials: true,
-  })
-);
 app.use(express.json());
 
 const uri = process.env.MONGODB_URI;
